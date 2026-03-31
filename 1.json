@@ -1,0 +1,77 @@
+{
+  "schema": "https://iot.aliyun.com/schema/thing/1.0",
+  "profile": {
+    "productKey": "a1b2c3d4e5f",
+    "deviceName": "SmartThermostat"
+  },
+  "properties": [
+    {
+      "identifier": "CurrentTemp",
+      "name": "当前温度",
+      "accessMode": "r",
+      "dataType": {
+        "type": "float",
+        "specs": {
+          "min": "-20",
+          "max": "50",
+          "unit": "°C"
+        }
+      }
+    }
+  ],
+  "services": [
+    {
+      "identifier": "SetTargetTemp",
+      "name": "设置目标温度",
+      "desc": "远程调整温控器的设定温度",
+      "callType": "async",
+      "inputData": [
+        {
+          "identifier": "targetValue",
+          "name": "目标数值",
+          "dataType": {
+            "type": "int",
+            "specs": {
+              "min": "16",
+              "max": "30",
+              "unit": "°C"
+            }
+          }
+        }
+      ],
+      "outputData": [
+        {
+          "identifier": "result",
+          "name": "执行结果",
+          "dataType": {
+            "type": "bool"
+          }
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "identifier": "OverheatAlarm",
+      "name": "高温告警",
+      "desc": "当设备检测到温度超过阈值时触发",
+      "type": "alert",
+      "outputData": [
+        {
+          "identifier": "currentValue",
+          "name": "当前报警温度值",
+          "dataType": {
+            "type": "float"
+          }
+        },
+        {
+          "identifier": "threshold",
+          "name": "报警阈值",
+          "dataType": {
+            "type": "float"
+          }
+        }
+      ]
+    }
+  ]
+}
