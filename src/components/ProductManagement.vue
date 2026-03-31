@@ -470,7 +470,6 @@
                                   <PictureOutlined v-if="!prop.icon" style="color: #ccc;" />
                                   <img v-else :src="prop.icon" />
                                 </div>
-                                <a-tag color="blue" class="type-tag">{{ prop.dataType?.type || '-' }}</a-tag>
                               </div>
                             </div>
                             <div class="event-card-body">
