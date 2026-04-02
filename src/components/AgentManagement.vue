@@ -9,16 +9,18 @@
             <plus-outlined class="add-icon" @click="openAddTreeNodeModal" />
           </div>
           <a-tree
-            :tree-data="treeData"
+            :tree-data="treeDataWithCounts"
             default-expand-all
             class="custom-tree"
+            v-model:selected-keys="selectedTreeKeys"
+            @select="onTreeSelect"
           >
-            <template #title="{ title, key }">
-              <div class="tree-node-wrapper">
+            <template #title="{ title, key, value, inScope }">
+              <div class="tree-node-wrapper" :class="{ 'out-of-scope': !inScope }">
                 <span class="tree-node-title">{{ title }}</span>
-                <div class="tree-node-actions">
-                  <edit-outlined @click.stop="openEditTreeNodeModal(title, key)" />
-                  <delete-outlined @click.stop="handleDeleteTreeNode(key)" />
+                <div class="tree-node-actions" v-if="inScope">
+                  <edit-outlined v-if="canEditNode(key)" @click.stop="openEditTreeNodeModal(value, key)" />
+                  <delete-outlined v-if="canDeleteNode(key)" @click.stop="handleDeleteTreeNode(key)" />
                 </div>
               </div>
             </template>
@@ -71,6 +73,18 @@
                 <a-button class="action-btn">重置</a-button>
                 <a-button class="action-btn">导出</a-button>
                 <a-button type="primary" class="add-btn" @click="openAddModal">新增</a-button>
+                <a-button type="primary" style="background-color: #52c41a; border-color: #52c41a;" class="add-btn" @click="openAddAccountModal">新增账号</a-button>
+                <div class="simulation-role">
+                  <span style="font-size: 12px; color: #999; margin-right: 8px;">切换模拟账号:</span>
+                  <a-select v-model:value="currentUserId" style="width: 220px" :options="simulationAccounts" :field-names="{ label: 'name', value: 'id' }">
+                    <template #option="{ name, agentName, roleName }">
+                      <div style="display: flex; flex-direction: column;">
+                        <span style="font-weight: bold; font-size: 13px;">{{ name }} ({{ roleName }})</span>
+                        <span style="font-size: 11px; color: #999;">所属: {{ agentName }}</span>
+                      </div>
+                    </template>
+                  </a-select>
+                </div>
               </a-space>
             </a-form-item>
           </a-form>
@@ -80,7 +94,7 @@
         <div class="table-container">
           <a-table
             :columns="columns"
-            :data-source="dataSource"
+            :data-source="filteredDataSource"
             :pagination="pagination"
             size="middle"
             row-selection="{}"
@@ -93,6 +107,7 @@
               <template v-else-if="column.key === 'action'">
                 <a-space>
                   <a class="action-link detail" @click="openDetailModal(record)">详情</a>
+                  <a class="action-link detail" style="color: #52c41a" @click="viewAccounts(record)">账号列表</a>
                   <a class="action-link edit" @click="openEditModal(record)">编辑</a>
                   <a-popconfirm
                     title="确定要删除该代理商吗？"
@@ -109,6 +124,39 @@
         </div>
       </a-col>
     </a-row>
+
+    <!-- Account List Modal -->
+    <a-modal
+      v-model:visible="accountsListVisible"
+      :title="`账号列表 - ${selectedAgentForAccounts?.name}`"
+      width="1000px"
+      :footer="null"
+      class="custom-modal"
+    >
+      <div class="account-list-actions" style="margin-bottom: 16px;">
+        <a-button type="primary" @click="openAddAccountModalWithAgent(selectedAgentForAccounts)">新增此代理商账号</a-button>
+      </div>
+      <a-table
+        :columns="accountColumns"
+        :data-source="currentAgentAccounts"
+        size="middle"
+        :pagination="false"
+      >
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.key === 'roleName'">
+            <a-tag :color="getRoleColor(record.role)">{{ record.roleName }}</a-tag>
+          </template>
+          <template v-else-if="column.key === 'action'">
+            <a-space>
+              <a class="action-link edit">编辑</a>
+              <a-popconfirm title="确定删除此账号？" @confirm="handleDeleteAccount(record)">
+                <a class="action-link delete">删除</a>
+              </a-popconfirm>
+            </a-space>
+          </template>
+        </template>
+      </a-table>
+    </a-modal>
 
     <!-- Add/Edit/Detail Modal -->
     <a-modal
@@ -132,6 +180,26 @@
                 placeholder="搜索或选择代理商..."
                 tree-default-expand-all
                 :disabled="isDetail"
+              />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="代理商层级" :required="!isDetail">
+              <a-select v-model:value="formState.level" placeholder="请选择层级" :disabled="isDetail">
+                <a-select-option v-for="level in allowedCreateLevels" :key="level" :value="level">{{ level }}</a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="上级代理商">
+              <a-tree-select
+                v-model:value="formState.parentName"
+                style="width: 100%"
+                :tree-data="treeData"
+                placeholder="选择上级代理商..."
+                tree-default-expand-all
+                :disabled="isDetail"
+                allow-clear
               />
             </a-form-item>
           </a-col>
@@ -193,6 +261,69 @@
       </a-form>
     </a-modal>
 
+    <!-- Add Account Modal (based on @代理商.md) -->
+    <a-modal
+      v-model:visible="accountModalVisible"
+      title="新增代理商账号"
+      @ok="handleAccountModalOk"
+      width="600px"
+      ok-text="保存"
+      cancel-text="取消"
+      class="custom-modal"
+    >
+      <a-form :model="accountFormState" layout="vertical" class="agent-form">
+        <a-row :gutter="24">
+          <a-col :span="12">
+            <a-form-item label="所属代理商" required>
+              <a-tree-select
+                v-model:value="accountFormState.agentId"
+                style="width: 100%"
+                :tree-data="treeDataWithCounts"
+                placeholder="请选择或搜索代理商..."
+                tree-default-expand-all
+                show-search
+                tree-node-filter-prop="title"
+              />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="账号名称 (持有人)" required>
+              <a-input v-model:value="accountFormState.name" placeholder="请输入姓名" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="分配角色" required>
+              <a-select v-model:value="accountFormState.role" placeholder="请选择角色">
+                <a-select-option v-for="role in accountRoles" :key="role.value" :value="role.value">
+                  {{ role.label }}
+                </a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="登录用户名" required>
+              <a-input v-model:value="accountFormState.username" placeholder="请输入用户名" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="登录密码" required>
+              <a-input-password v-model:value="accountFormState.password" placeholder="请输入密码" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="联系电话">
+              <a-input v-model:value="accountFormState.phone" placeholder="请输入手机号" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="24">
+            <a-form-item label="电子邮箱">
+              <a-input v-model:value="accountFormState.email" placeholder="请输入邮箱" />
+            </a-form-item>
+          </a-col>
+        </a-row>
+      </a-form>
+    </a-modal>
+
     <!-- Tree Node Edit Modal -->
     <a-modal
       v-model:visible="treeNodeModalVisible"
@@ -207,7 +338,7 @@
           <a-tree-select
             v-model:value="parentTreeNodeKey"
             style="width: 100%"
-            :tree-data="treeData"
+            :tree-data="treeDataWithCounts"
             placeholder="不选则作为一级节点"
             tree-default-expand-all
             allow-clear
@@ -222,7 +353,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed } from 'vue'
+import { reactive, ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { PlusOutlined, PictureOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
@@ -234,7 +365,8 @@ const searchForm = reactive({
   contact: '',
   phone: '',
   project: undefined,
-  date: []
+  date: [],
+  agentType: undefined
 })
 
 const handleJumpToProject = (record) => {
@@ -246,21 +378,70 @@ const handleJumpToProject = (record) => {
 
 const treeData = ref([
   {
-    title: '万众云联科技',
-    key: '0-0',
-    value: '万众云联科技',
+    title: '德菱控股',
+    key: 'root-0',
+    value: '德菱控股',
     children: [
-      { title: '贵阳华旭电气', key: '0-0-0', value: '贵阳华旭电气' },
-      { 
-        title: '徐州市民宗局监测系统', 
-        key: '0-0-1',
-        value: '徐州市民宗局监测系统',
+      {
+        title: '万众云联科技',
+        key: '0-0',
+        value: '万众云联科技',
         children: [
-          { title: '泉山区民宗局监测系统', key: '0-0-1-0', value: '泉山区民宗局监测系统' }
+          { 
+            title: '贵阳华旭电气', 
+            key: '0-0-0', 
+            value: '贵阳华旭电气',
+            children: [
+              { title: '黔南州运维中心', key: '0-0-0-0', value: '黔南州运维中心' },
+              { title: '遵义分中心', key: '0-0-0-1', value: '遵义分中心' }
+            ]
+          },
+          { 
+            title: '徐州市民宗局监测系统', 
+            key: '0-0-1',
+            value: '徐州市民宗局监测系统',
+            children: [
+              { title: '泉山区监测点', key: '0-0-1-0', value: '泉山区监测点' },
+              { title: '云龙区监测点', key: '0-0-1-1', value: '云龙区监测点' }
+            ]
+          },
+        ],
+      },
+      {
+        title: '华东大区代理',
+        key: '0-1',
+        value: '华东大区代理',
+        children: [
+          { 
+            title: '上海众兴自动化', 
+            key: '0-1-0', 
+            value: '上海众兴自动化',
+            children: [
+              { title: '浦东办事处', key: '0-1-0-0', value: '浦东办事处' },
+              { title: '嘉定联络处', key: '0-1-0-1', value: '嘉定联络处' }
+            ]
+          },
+          { title: '苏州工业园分拨', key: '0-1-1', value: '苏州工业园分拨' }
         ]
       },
+      {
+        title: '南方电网合作伙伴',
+        key: '0-2',
+        value: '南方电网合作伙伴',
+        children: [
+          { 
+            title: '深圳中兴通讯分销', 
+            key: '0-2-0', 
+            value: '深圳中兴通讯分销',
+            children: [
+              { title: '南山分销点', key: '0-2-0-0', value: '南山分销点' },
+              { title: '宝安分销点', key: '0-2-0-1', value: '宝安分销点' }
+            ]
+          }
+        ]
+      }
     ],
-  },
+  }
 ])
 
 // Modal logic
@@ -268,6 +449,8 @@ const modalVisible = ref(false)
 const modalType = ref('add') // 'add' | 'edit' | 'detail'
 const formState = reactive({
   name: undefined,
+  level: undefined,
+  parentName: undefined,
   account: '',
   password: '',
   contact: '',
@@ -331,6 +514,125 @@ const handleDelete = (record) => {
   message.success(`已删除代理商：${record.name}`)
 }
 
+// Simulation Accounts (for demo purposes)
+const simulationAccounts = [
+  { id: 1000, name: '厂家管理员', role: 'admin', roleName: '系统管理员', username: 'dl_admin', agentName: '德菱控股', agentLevel: '厂家' },
+  { id: 1001, name: '万众云联主管', role: 'admin', roleName: '代理商管理员', username: 'wz_boss', agentName: '万众云联科技', agentLevel: '一级' },
+  { id: 1005, name: '上海众兴主管', role: 'admin', roleName: '代理商管理员', username: 'shzx_boss', agentName: '上海众兴自动化', agentLevel: '二级' },
+  { id: 1006, name: '南山分销主管', role: 'admin', roleName: '代理商管理员', username: 'ns_boss', agentName: '南山分销点', agentLevel: '三级' }
+]
+
+const currentUserId = ref(simulationAccounts[0].id)
+const currentUser = computed(() => simulationAccounts.find(acc => acc.id === currentUserId.value) || simulationAccounts[0])
+
+// Reset tree selection when switching users
+watch(currentUserId, () => {
+  selectedTreeKeys.value = []
+})
+
+// Mock Accounts Data
+const mockAccounts = ref([
+  { id: 101, agentId: 1, name: '王管理员', role: 'admin', roleName: '代理商管理员', username: 'admin_wz', phone: '13800138000', email: 'wz@example.com', createTime: '2023-01-15 10:30:45' },
+  { id: 102, agentId: 1, name: '张操作员', role: 'operator', roleName: '操作员', username: 'op_wz', phone: '13800138001', email: 'op_wz@example.com', createTime: '2023-02-15 11:30:45' },
+  { id: 103, agentId: 2, name: '李工', role: 'admin', roleName: '代理商管理员', username: 'gyhx_01', phone: '13912345678', email: 'gyhx@example.com', createTime: '2023-03-20 15:20:12' },
+  { id: 104, agentId: 3, name: '陈雪', role: 'admin', roleName: '代理商管理员', username: 'xz_mzj', phone: '15335131341', email: 'xz@example.com', createTime: '2023-05-10 09:15:30' },
+  { id: 105, agentId: 4, name: '张总', role: 'admin', roleName: '代理商管理员', username: 'hd_proxy', phone: '13766554433', email: 'hd@example.com', createTime: '2023-06-01 14:00:00' },
+  { id: 106, agentId: 6, name: '赵经理', role: 'admin', roleName: '代理商管理员', username: 'zte_sz', phone: '13688889999', email: 'zte@example.com', createTime: '2023-09-05 16:45:22' },
+  { id: 107, agentId: 9, name: '众兴管理', role: 'admin', roleName: '代理商管理员', username: 'shzx_admin', phone: '13511223344', email: 'shzx@example.com', createTime: '2023-07-20 10:00:00' },
+  { id: 108, agentId: 10, name: '南山负责人', role: 'admin', roleName: '代理商管理员', username: 'ns_admin', phone: '13699887766', email: 'ns@example.com', createTime: '2023-11-05 09:30:00' },
+])
+
+const getAccountCount = (agentName) => {
+  const agent = dataSource.value.find(a => a.name === agentName)
+  if (!agent) return 0
+  return mockAccounts.value.filter(acc => acc.agentId === agent.id).length
+}
+
+const treeDataWithCounts = computed(() => {
+  const isManufacturer = currentUser.value.agentLevel === '厂家'
+  const targetName = currentUser.value.agentName
+
+  const processNode = (data, isPathOrUnder) => {
+    const result = []
+    for (const node of data) {
+      const isTarget = node.title === targetName || node.value === targetName
+      
+      const hasTargetInDescendants = (n, target) => {
+        if (n.title === target || n.value === target) return true
+        if (n.children) return n.children.some(child => hasTargetInDescendants(child, target))
+        return false
+      }
+
+      const onPath = hasTargetInDescendants(node, targetName)
+      
+      if (isManufacturer || isPathOrUnder || onPath) {
+        const inScope = isManufacturer || isPathOrUnder || isTarget
+        const newNode = { 
+          ...node,
+          selectable: inScope,
+          disabled: !inScope, // Completely gray out and disable non-scope nodes
+          inScope: inScope 
+        }
+        
+        if (node.children) {
+          const processedChildren = processNode(node.children, inScope)
+          if (processedChildren.length > 0) {
+            newNode.children = processedChildren
+          } else {
+            delete newNode.children
+          }
+        }
+        
+        const count = getAccountCount(node.value)
+        newNode.title = count > 0 ? `${node.value} (${count})` : node.value
+        
+        result.push(newNode)
+      }
+    }
+    return result
+  }
+
+  return processNode(treeData.value, false)
+})
+
+// Helper function to find title by key
+const findNodeTitle = (data, key) => {
+  for (const node of data) {
+    if (node.key === key) return node.value
+    if (node.children) {
+      const title = findNodeTitle(node.children, key)
+      if (title) return title
+    }
+  }
+  return null
+}
+
+// Helper to find key by name
+const findKeyByName = (data, name) => {
+  for (const node of data) {
+    if (node.title.includes(name) || node.value === name) return node.key
+    if (node.children) {
+      const key = findKeyByName(node.children, name)
+      if (key) return key
+    }
+  }
+  return null
+}
+
+// Tree Permission Helpers
+const canEditNode = (key) => {
+  return true
+}
+
+const canDeleteNode = (key) => {
+  const nodeTitle = findNodeTitle(treeData.value, key)
+  const isManufacturer = currentUser.value.agentLevel === '厂家'
+  if (isManufacturer) {
+    return nodeTitle !== '德菱控股'
+  }
+  return nodeTitle !== currentUser.value.agentName
+}
+
 // Tree maintenance logic
 const treeNodeModalVisible = ref(false)
 const treeNodeModalType = ref('add')
@@ -341,7 +643,11 @@ const currentTreeNodeKey = ref('')
 const openAddTreeNodeModal = () => {
   treeNodeModalType.value = 'add'
   treeNodeName.value = ''
-  parentTreeNodeKey.value = undefined
+  if (currentUser.value.agentLevel !== '厂家') {
+    parentTreeNodeKey.value = findKeyByName(treeData.value, currentUser.value.agentName)
+  } else {
+    parentTreeNodeKey.value = undefined
+  }
   treeNodeModalVisible.value = true
 }
 
@@ -417,6 +723,8 @@ const handleDeleteTreeNode = (key) => {
 const columns = [
   { title: '序号', dataIndex: 'id', key: 'id', width: 60, align: 'center' },
   { title: '代理商名称', dataIndex: 'name', key: 'name', width: 200, align: 'center', customCell: () => ({ style: { 'white-space': 'nowrap' } }) },
+  { title: '代理商层级', dataIndex: 'level', key: 'level', align: 'center' },
+  { title: '上级代理商', dataIndex: 'parentName', key: 'parentName', align: 'center' },
   { title: '账号', dataIndex: 'account', key: 'account', align: 'center' },
   { title: '联系人', dataIndex: 'contact', key: 'contact', align: 'center' },
   { title: '电话', dataIndex: 'phone', key: 'phone', align: 'center' },
@@ -428,15 +736,157 @@ const columns = [
 ]
 
 const dataSource = ref([
-  { id: 1, name: '万众云联科技', account: 'admin_wz', contact: '王经理', phone: '13800138000', projectCount: 12, deviceCount: 156, recentProject: '宝安人才公寓', createTime: '2023-01-15 10:30:45' },
-  { id: 2, name: '贵阳华旭电气', account: 'gyhx_01', contact: '李工', phone: '13912345678', projectCount: 5, deviceCount: 42, recentProject: '贵阳中心大厦', createTime: '2023-03-20 15:20:12' },
-  { id: 3, name: '徐州市民宗局监测系统', account: 'xz_mzj', contact: '陈雪', phone: '15335131341', projectCount: 8, deviceCount: 89, recentProject: '泉山区监测点', createTime: '2023-05-10 09:15:30' },
-  { id: 4, name: '华东大区代理', account: 'hd_proxy', contact: '张总', phone: '13766554433', projectCount: 25, deviceCount: 450, recentProject: '华东智慧电力园', createTime: '2023-06-01 14:00:00' },
-  { id: 5, name: '南方电网合作伙伴', account: 'south_grid', contact: '刘主任', phone: '13500001111', projectCount: 40, deviceCount: 1200, recentProject: '高新科技孵化器', createTime: '2023-08-12 11:20:15' },
-  { id: 6, name: '深圳中兴通讯分销', account: 'zte_sz', contact: '赵经理', phone: '13688889999', projectCount: 15, deviceCount: 320, recentProject: '中兴工业园', createTime: '2023-09-05 16:45:22' },
-  { id: 7, name: '成都成电自动化', account: 'cd_auto', contact: '曾工', phone: '13322223333', projectCount: 10, deviceCount: 180, recentProject: '成电科创中心', createTime: '2023-10-20 10:10:10' },
-  { id: 8, name: '武汉烽火科技代理', account: 'fh_wuhan', contact: '黄经理', phone: '13144445555', projectCount: 18, deviceCount: 260, recentProject: '烽火大厦', createTime: '2023-11-11 11:11:11' },
+  { id: 1, name: '万众云联科技', level: '一级', parentName: '--', account: 'admin_wz', contact: '王经理', phone: '13800138000', projectCount: 12, deviceCount: 156, recentProject: '宝安人才公寓', createTime: '2023-01-15 10:30:45' },
+  { id: 2, name: '贵阳华旭电气', level: '二级', parentName: '万众云联科技', account: 'gyhx_01', contact: '李工', phone: '13912345678', projectCount: 5, deviceCount: 42, recentProject: '贵阳中心大厦', createTime: '2023-03-20 15:20:12' },
+  { id: 3, name: '徐州市民宗局监测系统', level: '二级', parentName: '万众云联科技', account: 'xz_mzj', contact: '陈雪', phone: '15335131341', projectCount: 8, deviceCount: 89, recentProject: '泉山区监测点', createTime: '2023-05-10 09:15:30' },
+  { id: 4, name: '华东大区代理', level: '一级', parentName: '--', account: 'hd_proxy', contact: '张总', phone: '13766554433', projectCount: 25, deviceCount: 450, recentProject: '华东智慧电力园', createTime: '2023-06-01 14:00:00' },
+  { id: 5, name: '南方电网合作伙伴', level: '一级', parentName: '--', account: 'south_grid', contact: '刘主任', phone: '13500001111', projectCount: 40, deviceCount: 1200, recentProject: '高新科技孵化器', createTime: '2023-08-12 11:20:15' },
+  { id: 6, name: '深圳中兴通讯分销', level: '二级', parentName: '南方电网合作伙伴', account: 'zte_sz', contact: '赵经理', phone: '13688889999', projectCount: 15, deviceCount: 320, recentProject: '中兴工业园', createTime: '2023-09-05 16:45:22' },
+  { id: 7, name: '成都成电自动化', level: '三级', parentName: '深圳中兴通讯分销', account: 'cd_auto', contact: '曾工', phone: '13322223333', projectCount: 10, deviceCount: 180, recentProject: '成电科创中心', createTime: '2023-10-20 10:10:10' },
+  { id: 8, name: '武汉烽火科技代理', level: '一级', parentName: '--', account: 'fh_wuhan', contact: '黄经理', phone: '13144445555', projectCount: 18, deviceCount: 260, recentProject: '烽火大厦', createTime: '2023-11-11 11:11:11' },
+  { id: 9, name: '上海众兴自动化', level: '二级', parentName: '华东大区代理', account: 'shzx_admin', contact: '周经理', phone: '13511223344', projectCount: 22, deviceCount: 380, recentProject: '浦东办事处', createTime: '2023-07-20 10:00:00' },
+  { id: 10, name: '南山分销点', level: '三级', parentName: '深圳中兴通讯分销', account: 'ns_admin', contact: '刘工', phone: '13699887766', projectCount: 6, deviceCount: 95, recentProject: '南山工业园', createTime: '2023-11-05 09:30:00' },
+  { id: 11, name: '黔南州运维中心', level: '三级', parentName: '贵阳华旭电气', account: 'qn_ops', contact: '王工', phone: '13700001111', projectCount: 3, deviceCount: 28, recentProject: '黔南监测点', createTime: '2023-12-01 10:00:00' },
 ])
+
+// Account Modal Logic
+const accountModalVisible = ref(false)
+const accountsListVisible = ref(false)
+const selectedAgentForAccounts = ref(null)
+
+const accountFormState = reactive({
+  agentId: undefined,
+  name: '',
+  role: undefined,
+  username: '',
+  password: '',
+  phone: '',
+  email: ''
+})
+
+const accountRoles = [
+  { value: 'admin', label: '代理商管理员' },
+  { value: 'operator', label: '操作员' },
+  { value: 'viewer', label: '查看者' }
+]
+
+const accountColumns = [
+  { title: '账号名称', dataIndex: 'name', key: 'name' },
+  { title: '登录用户名', dataIndex: 'username', key: 'username' },
+  { title: '角色', dataIndex: 'roleName', key: 'roleName' },
+  { title: '联系电话', dataIndex: 'phone', key: 'phone' },
+  { title: '邮箱', dataIndex: 'email', key: 'email' },
+  { title: '创建时间', dataIndex: 'createTime', key: 'createTime' },
+  { title: '操作', key: 'action', width: 120 }
+]
+
+const currentAgentAccounts = computed(() => {
+  if (!selectedAgentForAccounts.value) return []
+  return mockAccounts.value.filter(acc => acc.agentId === selectedAgentForAccounts.value.id)
+})
+
+const getRoleColor = (role) => {
+  const map = {
+    admin: 'blue',
+    operator: 'orange',
+    viewer: 'green'
+  }
+  return map[role] || 'default'
+}
+
+const viewAccounts = (record) => {
+  selectedAgentForAccounts.value = record
+  accountsListVisible.value = true
+}
+
+const openAddAccountModal = () => {
+  // Reset form
+  Object.keys(accountFormState).forEach(key => accountFormState[key] = '')
+  accountFormState.agentId = undefined
+  accountFormState.role = undefined
+  accountModalVisible.value = true
+}
+
+const openAddAccountModalWithAgent = (agent) => {
+  openAddAccountModal()
+  accountFormState.agentId = findKeyByName(treeData.value, agent.name)
+}
+
+const handleAccountModalOk = () => {
+  // Basic Validation (Simulated based on @代理商.md)
+  if (!accountFormState.agentId || !accountFormState.name || !accountFormState.role || !accountFormState.username || !accountFormState.password) {
+    message.error('请填写必填项 (所属代理商、账号名称、分配角色、用户名、密码)')
+    return
+  }
+  
+  if (accountFormState.username.length < 4) {
+    message.error('登录用户名至少需要4个字符')
+    return
+  }
+  
+  // Check unique username
+  const exists = mockAccounts.value.some(acc => acc.username === accountFormState.username)
+  if (exists) {
+    message.error('登录用户名已存在，请更换')
+    return
+  }
+  
+  if (accountFormState.password.length < 6) {
+    message.error('密码至少需要6位')
+    return
+  }
+
+  const agentTitle = findNodeTitle(treeData.value, accountFormState.agentId)
+  const agentRecord = dataSource.value.find(a => a.name === agentTitle)
+
+  // Create new account
+  const roleObj = accountRoles.find(r => r.value === accountFormState.role)
+  const newAccount = {
+    id: Date.now(),
+    agentId: agentRecord ? agentRecord.id : 0,
+    name: accountFormState.name,
+    role: accountFormState.role,
+    roleName: roleObj ? roleObj.label : '',
+    username: accountFormState.username,
+    phone: accountFormState.phone,
+    email: accountFormState.email,
+    createTime: new Date().toLocaleString()
+  }
+
+  mockAccounts.value.push(newAccount)
+  message.success('新增账号成功')
+  accountModalVisible.value = false
+}
+
+const handleDeleteAccount = (record) => {
+  const index = mockAccounts.value.findIndex(acc => acc.id === record.id)
+  if (index !== -1) {
+    mockAccounts.value.splice(index, 1)
+    message.success('账号已删除')
+  }
+}
+
+const allowedAgentsForAccount = computed(() => {
+  const level = currentUser.value.agentLevel
+  
+  if (level === '厂家') {
+    return dataSource.value // All agents
+  }
+  
+  if (level === '一级') {
+    return dataSource.value.filter(item => ['一级', '二级', '三级'].includes(item.level))
+  }
+  
+  if (level === '二级') {
+    return dataSource.value.filter(item => ['二级', '三级'].includes(item.level))
+  }
+  
+  if (level === '三级') {
+    return dataSource.value.filter(item => item.level === '三级')
+  }
+  
+  return []
+})
 
 const pagination = reactive({
   current: 1,
@@ -445,6 +895,69 @@ const pagination = reactive({
   showTotal: (total) => `共 ${total} 条记录`,
   showSizeChanger: true,
   pageSizeOptions: ['10', '20', '50', '100']
+})
+
+const selectedTreeKeys = ref([])
+
+const onTreeSelect = (keys) => {
+  selectedTreeKeys.value = keys
+}
+
+const filteredDataSource = computed(() => {
+  const currentAgentName = currentUser.value.agentName
+  const isManufacturer = currentUser.value.agentLevel === '厂家'
+
+  // Helper to get descendants for ANY target name
+  const getDescendantNames = (target) => {
+    const names = []
+    const findAndCollect = (data, targetName, found) => {
+      for (const node of data) {
+        const cleanTitle = node.value
+        const isTarget = cleanTitle === targetName
+        if (found || isTarget) {
+          names.push(cleanTitle)
+          if (node.children) findAndCollect(node.children, targetName, true)
+        } else if (node.children) {
+          findAndCollect(node.children, targetName, false)
+        }
+      }
+    }
+    findAndCollect(treeData.value, target, false)
+    return names
+  }
+
+  // 1. Calculate names allowed by simulation-user permissions
+  const permissionNames = isManufacturer ? dataSource.value.map(a => a.name) : getDescendantNames(currentAgentName)
+
+  // 2. Calculate names allowed by tree selection
+  let treeSelectionNames = permissionNames
+  if (selectedTreeKeys.value.length > 0) {
+    const selectedTitle = findNodeTitle(treeData.value, selectedTreeKeys.value[0])
+    if (selectedTitle) {
+      treeSelectionNames = getDescendantNames(selectedTitle)
+    }
+  }
+
+  return dataSource.value.filter(item => {
+    const matchName = !searchForm.name || item.name.includes(searchForm.name)
+    const matchAccount = !searchForm.account || item.account.includes(searchForm.account)
+    const matchContact = !searchForm.contact || item.contact.includes(searchForm.contact)
+    const matchPhone = !searchForm.phone || item.phone.includes(searchForm.phone)
+    
+    // Intersection of permission-allowed and tree-selection-allowed
+    const matchPermission = permissionNames.includes(item.name) && treeSelectionNames.includes(item.name)
+    
+    return matchName && matchAccount && matchContact && matchPhone && matchPermission
+  })
+})
+
+const allowedCreateLevels = computed(() => {
+  const level = currentUser.value.agentLevel
+  if (level === '厂家') return ['一级']
+  if (level === '一级') return ['一级', '二级', '三级']
+  if (level === '二级') return ['二级', '三级']
+  if (level === '三级') return ['三级']
+  return ['一级', '二级', '三级']
 })
 </script>
 
@@ -497,6 +1010,21 @@ const pagination = reactive({
   align-items: center;
   width: 100%;
   padding-right: 8px;
+}
+
+.out-of-scope {
+  color: #bfbfbf;
+  cursor: not-allowed;
+}
+
+/* Ensure the disabled items in TreeSelect also look clearly disabled */
+:deep(.ant-select-tree-node-content-wrapper[title]), 
+:deep(.ant-select-tree-node-disabled) {
+  cursor: not-allowed !important;
+}
+
+.out-of-scope .tree-node-title {
+  color: #bfbfbf;
 }
 
 .tree-node-actions {
@@ -571,6 +1099,19 @@ const pagination = reactive({
 .action-link.detail { color: #1890ff; }
 .action-link.edit { color: #1890ff; }
 .action-link.delete { color: #ff4d4f; }
+
+.simulation-role {
+  display: flex;
+  align-items: center;
+  margin-left: 16px;
+  padding-left: 16px;
+  border-left: 1px solid #eee;
+}
+
+.account-list-actions {
+  display: flex;
+  justify-content: flex-end;
+}
 
 :deep(.ant-table) {
   font-size: 13px;
