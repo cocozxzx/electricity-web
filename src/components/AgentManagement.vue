@@ -724,7 +724,7 @@ const allowedCreateLevels = computed(() => {
 .search-input { width: 120px; }
 .search-select { width: 150px; }
 .search-form :deep(.ant-form-item) { margin-right: 8px; margin-bottom: 0; }
-.search-form :deep(.ant-form-item:last-child) { margin-left: auto; margin-right: 0; }
+.search-actions { margin-left: auto !important; margin-right: 0 !important; }
 :deep(.ant-input), :deep(.ant-select-selector), :deep(.ant-picker) { height: 32px !important; font-size: 13px !important; }
 .add-btn { background-color: #1890ff; border-radius: 4px; font-size: 13px; border-color: #1890ff; }
 .table-container { background: #fff; padding: 16px; border-radius: 4px; border: 1px solid #e6ebf1; }
