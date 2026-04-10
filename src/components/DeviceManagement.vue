@@ -154,8 +154,8 @@
       <a-form :model="deviceForm" layout="vertical" class="pretty-form">
         <a-row :gutter="24">
           <a-col :span="deviceModalType === 'add' ? 12 : 24">
-            <a-form-item label="设备名称" required v-if="deviceModalType === 'add'">
-              <a-input v-model:value="deviceForm.name" placeholder="请输入设备名称" />
+            <a-form-item label="DeviceName" required v-if="deviceModalType === 'add'">
+              <a-input v-model:value="deviceForm.name" placeholder="请输入DeviceName" />
             </a-form-item>
             <a-form-item label="备注名称" v-else>
               <a-input v-model:value="deviceForm.remark" placeholder="请输入新的备注名称" />
@@ -184,6 +184,7 @@
         <div class="detail-section">
           <div class="section-title">基础信息</div>
           <a-descriptions bordered :column="3" size="small">
+            <a-descriptions-item label="DeviceName">{{ currentDevice.deviceName }}</a-descriptions-item>
             <a-descriptions-item label="设备名称">{{ currentDevice.name }}</a-descriptions-item>
             <a-descriptions-item label="备注名称">{{ currentDevice.remark }}</a-descriptions-item>
             <a-descriptions-item label="设备型号">{{ currentDevice.model }}</a-descriptions-item>
@@ -271,6 +272,7 @@ const searchForm = reactive({
 
 const columns = [
   { title: '序号', dataIndex: 'id', key: 'id', width: 80, fixed: 'left', align: 'center' },
+  { title: 'DeviceName', dataIndex: 'deviceName', key: 'deviceName', width: 150, fixed: 'left', align: 'center' },
   { title: '设备名称', dataIndex: 'name', key: 'name', width: 150, fixed: 'left', align: 'center' },
   { title: '备注名称', dataIndex: 'remark', key: 'remark', width: 150, align: 'center' },
   { title: '设备类型', dataIndex: 'type', key: 'type', width: 100, align: 'center' },
@@ -294,16 +296,16 @@ const columns = [
 ]
 
 const dataSource = ref([
-  { id: 1, name: '宝安主网关', remark: '1号配电房网关', type: '网关', model: 'IoT-GW-Pro', deviceId: 'GW-00128', physicalId: 'PHY-GW-1001', enabled: true, status: '激活', onlineStatus: '在线', activeTime: '2023-05-15 09:30:00', runTime: 18240, project: '宝安人才公寓', agent: '万众云联科技', location: '1F配电箱', manufacturer: '华为科技', prodDate: '2023-01-10', swVer: 'v2.3.1', hwVer: 'v1.0.0', factoryCode: 'FAC-01' },
-  { id: 2, name: '照明控制断路器', remark: 'A区走廊灯', type: '子设备', model: 'CB-100-Smart', deviceId: 'SUB-20045', physicalId: 'PHY-CB-5002', enabled: true, status: '激活', onlineStatus: '离线', activeTime: '2023-06-20 10:10:00', runTime: 14520, project: '宝安人才公寓', agent: '万众云联科技', location: '1F-A区', manufacturer: '正泰电器', prodDate: '2023-02-15', swVer: 'v1.0.5', hwVer: 'v1.2.0', factoryCode: 'FAC-02' },
-  { id: 3, name: '空调支路开关', remark: '201会议室空调', type: '子设备', model: 'CB-100-Smart', deviceId: 'SUB-20046', physicalId: 'PHY-CB-5003', enabled: true, status: '未激活', onlineStatus: '离线', activeTime: '-', runTime: 0, project: '天河办公楼', agent: '贵阳华旭电气', location: '2F会议室', manufacturer: '正泰电器', prodDate: '2023-03-20', swVer: 'v1.0.5', hwVer: 'v1.2.0', factoryCode: 'FAC-02' },
-  { id: 4, name: '插座回路', remark: '3F办公区', type: '子设备', model: 'CB-100-Smart', deviceId: 'SUB-20047', physicalId: 'PHY-CB-5004', enabled: true, status: '激活', onlineStatus: '在线', activeTime: '2023-06-26 11:20:00', runTime: 13260, project: '天河办公楼', agent: '贵阳华旭电气', location: '3F办公区', manufacturer: '正泰电器', prodDate: '2023-04-10', swVer: 'v1.0.5', hwVer: 'v1.2.0', factoryCode: 'FAC-02' },
-  { id: 5, name: '电梯动力', remark: '1号梯电源', type: '子设备', model: 'CB-200-Smart', deviceId: 'SUB-20048', physicalId: 'PHY-CB-5005', enabled: true, status: '激活', onlineStatus: '在线', activeTime: '2023-08-25 09:00:00', runTime: 9680, project: '宝安人才公寓', agent: '万众云联科技', location: 'B1机房', manufacturer: '正泰电器', prodDate: '2023-05-12', swVer: 'v1.1.0', hwVer: 'v1.2.0', factoryCode: 'FAC-02' },
-  { id: 6, name: '应急照明网关', remark: '公共区域应急', type: '网关', model: 'IoT-GW-Pro', deviceId: 'GW-00130', physicalId: 'PHY-GW-1003', enabled: true, status: '激活', onlineStatus: '在线', activeTime: '2023-05-18 14:25:00', runTime: 18030, project: '天河办公楼', agent: '贵阳华旭电气', location: '1F弱电间', manufacturer: '华为科技', prodDate: '2023-01-15', swVer: 'v2.3.1', hwVer: 'v1.0.0', factoryCode: 'FAC-01' },
-  { id: 7, name: '地库排污泵', remark: 'B2集水坑', type: '子设备', model: 'CB-200-Smart', deviceId: 'SUB-20049', physicalId: 'PHY-CB-5006', enabled: false, status: '未激活', onlineStatus: '-', activeTime: '2023-09-01 08:40:00', runTime: 9050, project: '万众云联科技', agent: '万众云联科技', location: 'B2车库', manufacturer: '正泰电器', prodDate: '2023-06-20', swVer: 'v1.1.0', hwVer: 'v1.2.0', factoryCode: 'FAC-02' },
-  { id: 8, name: '监控网关', remark: '全楼安防', type: '网关', model: 'IoT-GW-Pro', deviceId: 'GW-00131', physicalId: 'PHY-GW-1004', enabled: true, status: '激活', onlineStatus: '在线', activeTime: '2023-05-20 16:50:00', runTime: 17950, project: '天河办公楼', agent: '贵阳华旭电气', location: '1F监控室', manufacturer: '华为科技', prodDate: '2023-01-20', swVer: 'v2.3.1', hwVer: 'v1.0.0', factoryCode: 'FAC-01' },
-  { id: 9, name: '消防水泵', remark: '稳压泵电源', type: '子设备', model: 'CB-200-Smart', deviceId: 'SUB-20050', physicalId: 'PHY-CB-5007', enabled: true, status: '激活', onlineStatus: '在线', activeTime: '2023-09-03 10:15:00', runTime: 8870, project: '宝安人才公寓', agent: '万众云联科技', location: 'B1水泵房', manufacturer: '正泰电器', prodDate: '2023-07-05', swVer: 'v1.1.0', hwVer: 'v1.2.0', factoryCode: 'FAC-02' },
-  { id: 10, name: '冷水机组', remark: '空调主机开关', type: '子设备', model: 'CB-200-Smart', deviceId: 'SUB-20051', physicalId: 'PHY-CB-5008', enabled: true, status: '激活', onlineStatus: '在线', activeTime: '2023-09-08 13:05:00', runTime: 8460, project: '天河办公楼', agent: '贵阳华旭电气', location: '顶楼机房', manufacturer: '正泰电器', prodDate: '2023-08-10', swVer: 'v1.1.0', hwVer: 'v1.2.0', factoryCode: 'FAC-02' },
+  { id: 1, deviceName: 'GW-BA-001', name: '宝安主网关', remark: '1号配电房网关', type: '网关', model: 'IoT-GW-Pro', deviceId: 'GW-00128', physicalId: 'PHY-GW-1001', enabled: true, status: '激活', onlineStatus: '在线', activeTime: '2023-05-15 09:30:00', runTime: 18240, project: '宝安人才公寓', agent: '万众云联科技', location: '1F配电箱', manufacturer: '华为科技', prodDate: '2023-01-10', swVer: 'v2.3.1', hwVer: 'v1.0.0', factoryCode: 'FAC-01' },
+  { id: 2, deviceName: 'CB-BA-002', name: '照明控制断路器', remark: 'A区走廊灯', type: '子设备', model: 'CB-100-Smart', deviceId: 'SUB-20045', physicalId: 'PHY-CB-5002', enabled: true, status: '激活', onlineStatus: '离线', activeTime: '2023-06-20 10:10:00', runTime: 14520, project: '宝安人才公寓', agent: '万众云联科技', location: '1F-A区', manufacturer: '正泰电器', prodDate: '2023-02-15', swVer: 'v1.0.5', hwVer: 'v1.2.0', factoryCode: 'FAC-02' },
+  { id: 3, deviceName: 'CB-TH-003', name: '空调支路开关', remark: '201会议室空调', type: '子设备', model: 'CB-100-Smart', deviceId: 'SUB-20046', physicalId: 'PHY-CB-5003', enabled: true, status: '未激活', onlineStatus: '离线', activeTime: '-', runTime: 0, project: '天河办公楼', agent: '贵阳华旭电气', location: '2F会议室', manufacturer: '正泰电器', prodDate: '2023-03-20', swVer: 'v1.0.5', hwVer: 'v1.2.0', factoryCode: 'FAC-02' },
+  { id: 4, deviceName: 'CB-TH-004', name: '插座回路', remark: '3F办公区', type: '子设备', model: 'CB-100-Smart', deviceId: 'SUB-20047', physicalId: 'PHY-CB-5004', enabled: true, status: '激活', onlineStatus: '在线', activeTime: '2023-06-26 11:20:00', runTime: 13260, project: '天河办公楼', agent: '贵阳华旭电气', location: '3F办公区', manufacturer: '正泰电器', prodDate: '2023-04-10', swVer: 'v1.0.5', hwVer: 'v1.2.0', factoryCode: 'FAC-02' },
+  { id: 5, deviceName: 'CB-BA-005', name: '电梯动力', remark: '1号梯电源', type: '子设备', model: 'CB-200-Smart', deviceId: 'SUB-20048', physicalId: 'PHY-CB-5005', enabled: true, status: '激活', onlineStatus: '在线', activeTime: '2023-08-25 09:00:00', runTime: 9680, project: '宝安人才公寓', agent: '万众云联科技', location: 'B1机房', manufacturer: '正泰电器', prodDate: '2023-05-12', swVer: 'v1.1.0', hwVer: 'v1.2.0', factoryCode: 'FAC-02' },
+  { id: 6, deviceName: 'GW-TH-006', name: '应急照明网关', remark: '公共区域应急', type: '网关', model: 'IoT-GW-Pro', deviceId: 'GW-00130', physicalId: 'PHY-GW-1003', enabled: true, status: '激活', onlineStatus: '在线', activeTime: '2023-05-18 14:25:00', runTime: 18030, project: '天河办公楼', agent: '贵阳华旭电气', location: '1F弱电间', manufacturer: '华为科技', prodDate: '2023-01-15', swVer: 'v2.3.1', hwVer: 'v1.0.0', factoryCode: 'FAC-01' },
+  { id: 7, deviceName: 'CB-WZ-007', name: '地库排污泵', remark: 'B2集水坑', type: '子设备', model: 'CB-200-Smart', deviceId: 'SUB-20049', physicalId: 'PHY-CB-5006', enabled: false, status: '未激活', onlineStatus: '-', activeTime: '2023-09-01 08:40:00', runTime: 9050, project: '万众云联科技', agent: '万众云联科技', location: 'B2车库', manufacturer: '正泰电器', prodDate: '2023-06-20', swVer: 'v1.1.0', hwVer: 'v1.2.0', factoryCode: 'FAC-02' },
+  { id: 8, deviceName: 'GW-TH-008', name: '监控网关', remark: '全楼安防', type: '网关', model: 'IoT-GW-Pro', deviceId: 'GW-00131', physicalId: 'PHY-GW-1004', enabled: true, status: '激活', onlineStatus: '在线', activeTime: '2023-05-20 16:50:00', runTime: 17950, project: '天河办公楼', agent: '贵阳华旭电气', location: '1F监控室', manufacturer: '华为科技', prodDate: '2023-01-20', swVer: 'v2.3.1', hwVer: 'v1.0.0', factoryCode: 'FAC-01' },
+  { id: 9, deviceName: 'CB-BA-009', name: '消防水泵', remark: '稳压泵电源', type: '子设备', model: 'CB-200-Smart', deviceId: 'SUB-20050', physicalId: 'PHY-CB-5007', enabled: true, status: '激活', onlineStatus: '在线', activeTime: '2023-09-03 10:15:00', runTime: 8870, project: '宝安人才公寓', agent: '万众云联科技', location: 'B1水泵房', manufacturer: '正泰电器', prodDate: '2023-07-05', swVer: 'v1.1.0', hwVer: 'v1.2.0', factoryCode: 'FAC-02' },
+  { id: 10, deviceName: 'CB-TH-010', name: '冷水机组', remark: '空调主机开关', type: '子设备', model: 'CB-200-Smart', deviceId: 'SUB-20051', physicalId: 'PHY-CB-5008', enabled: true, status: '激活', onlineStatus: '在线', activeTime: '2023-09-08 13:05:00', runTime: 8460, project: '天河办公楼', agent: '贵阳华旭电气', location: '顶楼机房', manufacturer: '正泰电器', prodDate: '2023-08-10', swVer: 'v1.1.0', hwVer: 'v1.2.0', factoryCode: 'FAC-02' },
 ])
 
 const pagination = reactive({
