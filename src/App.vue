@@ -473,9 +473,9 @@ const currentPath = computed(() => {
   background-image: url('@/assets/top.png');
   background-size: 100% 100%;
   background-repeat: no-repeat;
-  padding: 0 40px;
-  height: 80px;
-  line-height: 80px;
+  padding: 0 2.08vw;
+  height: 4.17vw;
+  line-height: 4.17vw;
   border-bottom: none;
   box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
   position: fixed;
@@ -485,37 +485,53 @@ const currentPath = computed(() => {
   z-index: 1000;
 }
 
-.header-left, .header-right {
+.header-left {
+  position: absolute;
+  left: 1.04vw;
+  top: 0;
+  height: 4.17vw;
+  width: 32%;
   display: flex;
-  gap: 15px;
-  flex: 1;
+  gap: 0.625vw;
   align-items: center;
-  padding-top: 40px;
+  padding-top: 2.08vw;
+  z-index: 5;
 }
 
 .header-right {
+  position: absolute;
+  right: 1.04vw;
+  top: 0;
+  height: 4.17vw;
+  width: 32%;
+  display: flex;
+  gap: 0.625vw;
+  align-items: center;
+  padding-top: 2.08vw;
   justify-content: flex-end;
+  z-index: 5;
 }
 
 .header-center {
   position: absolute;
   left: 50%;
+  top: 0;
   transform: translateX(-50%);
-  text-align: center;
+  width: 34%;
+  height: 4.17vw;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-top: 0px;
   z-index: 10;
 }
 
 .project-title {
   color: #00eaff;
   margin: 0;
-  font-size: 36px;
+  font-size: 1.875vw;
   font-weight: bold;
   text-shadow: 0 0 15px rgba(0, 234, 255, 0.7);
-  letter-spacing: 2px;
+  letter-spacing: 0.1vw;
   white-space: nowrap;
 }
 
@@ -523,7 +539,7 @@ const currentPath = computed(() => {
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 0.625vw;
   transition: all 0.3s;
 }
 
@@ -536,8 +552,8 @@ const currentPath = computed(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 1.458vw;
+  height: 1.458vw;
   background: rgba(0, 234, 255, 0.1);
   border: 1px solid rgba(0, 234, 255, 0.4);
   border-radius: 4px;
@@ -551,15 +567,15 @@ const currentPath = computed(() => {
 }
 
 .title-down-icon {
-  font-size: 16px;
+  font-size: 0.833vw;
   color: #00eaff;
 }
 
 .nav-btn {
   color: #fff;
-  font-size: 16px;
-  height: 40px;
-  padding: 0 20px;
+  font-size: 0.833vw;
+  height: 2.083vw;
+  padding: 0 1.04vw;
   border-radius: 4px;
   transition: all 0.3s;
   display: flex;
@@ -582,8 +598,8 @@ const currentPath = computed(() => {
 
 .main-layout-wrapper {
   background: #f0f2f5;
-  margin-top: 80px;
-  height: calc(100vh - 80px);
+  margin-top: 4.17vw;
+  height: calc(100vh - 4.17vw);
 }
 
 .main-layout-wrapper.dark-bg,
@@ -597,10 +613,10 @@ const currentPath = computed(() => {
   background: #304156 !important;
   box-shadow: 2px 0 6px rgba(0, 21, 41, 0.35);
   transition: all 0.3s;
-  height: calc(100vh - 80px);
+  height: calc(100vh - 4.17vw);
   position: fixed;
   left: 0;
-  top: 80px;
+  top: 4.17vw;
   z-index: 100;
 }
 

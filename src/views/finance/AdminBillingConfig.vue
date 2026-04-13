@@ -62,7 +62,7 @@
         <div class="modal-section">
           <div class="section-header">
             <span class="section-title">设备定价配置</span>
-            <a-button type="primary" size="small" class="add-btn" @click="openAddType">新增设备类型</a-button>
+            <!-- <a-button type="primary" size="small" class="add-btn" @click="openAddType">新增设备类型</a-button> -->
           </div>
           <a-table 
             :columns="pricingColumns" 

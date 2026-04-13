@@ -102,6 +102,13 @@
                 <div class="step-title">[ 第一步：产品信息与物模型导入 ]</div>
                 <a-form layout="vertical" :model="formState" :rules="rules" ref="formRef" style="margin-top: 16px;">
                   <a-row :gutter="16">
+                    <a-col :span="24">
+                      <a-form-item label="物模型名称" name="name">
+                        <a-input v-model:value="formState.name" placeholder="请输入物模型名称" />
+                      </a-form-item>
+                    </a-col>
+                  </a-row>
+                  <a-row :gutter="16">
                     <a-col :span="12">
                       <a-form-item label="产品类型" name="productType">
                         <a-radio-group v-model:value="formState.productType">

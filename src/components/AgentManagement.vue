@@ -39,23 +39,12 @@
         <!-- Search Bar -->
         <div class="search-form-container">
           <a-form layout="inline" :model="searchForm" class="search-form">
-            <a-form-item label="">
-              <a-tree-select
-                v-model:value="searchForm.name"
-                style="width: 220px"
-                :tree-data="treeDataWithCounts"
-                placeholder="搜索代理商..."
-                allow-clear
-                tree-default-expand-all
-                show-search
-                tree-node-filter-prop="title"
-              />
-            </a-form-item>
+           
             <a-form-item>
               <a-input v-model:value="searchForm.account" placeholder="账号" class="search-input" />
             </a-form-item>
             <a-form-item>
-              <a-input v-model:value="searchForm.contact" placeholder="联系人" class="search-input" />
+              <a-input v-model:value="searchForm.contact" placeholder="姓名" class="search-input" />
             </a-form-item>
             <a-form-item>
               <a-input v-model:value="searchForm.phone" placeholder="电话" class="search-input" />
