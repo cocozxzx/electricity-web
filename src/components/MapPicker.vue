@@ -36,7 +36,8 @@ let placeSearch = null
 
 const initMap = () => {
   AMapLoader.load({
-    key: '992460944b03294290d0fb9f4b6e5ddb', // 此处保持与 MapContainer 一致
+    // key: '992460944b03294290d0fb9f4b6e5ddb', // 此处保持与 MapContainer 一致
+    key:'091d484561fd08818fdb679373cd3210	',
     version: '2.0',
     plugins: ['AMap.Geocoder', 'AMap.PlaceSearch', 'AMap.Marker']
   }).then((AMap) => {

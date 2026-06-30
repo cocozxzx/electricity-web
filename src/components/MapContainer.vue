@@ -42,12 +42,14 @@ const loading = ref(true)
 // 安全密钥（JS API 2.0 必须）
 // 注意：在实际生产环境中，建议通过环境变量或后端接口获取
 window._AMapSecurityConfig = {
-  securityJsCode: '99deb6f9134b30e15fcf39248df79f1c' // 请替换为实际的安全密钥
+  // securityJsCode: '99deb6f9134b30e15fcf39248df79f1c' // 请替换为实际的安全密钥
+  securityJsCode: 'eb2ea24e7571f565d67fd732b1a21f2d' // 请替换为实际的安全密钥
 }
 
 const initMap = () => {
   AMapLoader.load({
-    key: '992460944b03294290d0fb9f4b6e5ddb', // 请替换为实际的 Key
+    // key: '992460944b03294290d0fb9f4b6e5ddb', // 请替换为实际的 Key
+    key:'091d484561fd08818fdb679373cd3210',
     version: '2.0',
     plugins: ['AMap.ToolBar', 'AMap.Scale', 'AMap.HawkEye', 'AMap.MapType', 'AMap.Geolocation']
   }).then((AMap) => {

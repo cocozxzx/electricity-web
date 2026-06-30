@@ -21,7 +21,7 @@
             <div class="section-title">能源综合平衡与优化调度 (24h 预测)</div>
             <a-radio-group v-model:value="scheduleView" size="small">
               <a-radio-button value="power">电力负荷</a-radio-button>
-              <a-radio-button value="heat">热力平衡</a-radio-button>
+              <a-radio-button value="valley">谷电调度</a-radio-button>
             </a-radio-group>
           </div>
           <div ref="scheduleChartRef" style="height: 400px;"></div>

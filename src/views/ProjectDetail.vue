@@ -404,10 +404,17 @@
     >
       <div class="report-export-modal">
         <div class="date-picker-container">
-          <a-date-picker v-model:value="reportForm.date" placeholder="选择日期" style="width: 200px" />
+          <a-date-picker
+            v-model:value="reportForm.date"
+            :picker="pickerType"
+            :disabled-date="disabledDate"
+            :allow-clear="false"
+            placeholder="选择日期"
+            style="width: 200px"
+          />
         </div>
 
-        <div class="report-document premium-style">
+        <div class="report-document premium-style" ref="reportDocRef">
           <div class="report-header-premium">
             <div class="report-org">浙江德菱科技股份有限公司</div>
             <div class="report-title-main">{{ projectName }}安全运行{{ reportType }}</div>
@@ -473,6 +480,100 @@
                     <div class="value">{{ reportForm.infoCount }}</div>
                   </div>
                 </div>
+
+                <!-- 告警类型分布统计 -->
+                <div class="sub-block">
+                  <div class="sub-head">告警类型分布统计</div>
+                  <table class="report-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 60px">序号</th>
+                        <th>告警类型</th>
+                        <th style="width: 120px">次数</th>
+                        <th style="width: 120px">占比</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(item, i) in alarmTypeStats" :key="item.name">
+                        <td>{{ i + 1 }}</td>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.count }}</td>
+                        <td>{{ item.percent }}%</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- 处理状态分布统计 -->
+                <div class="sub-block">
+                  <div class="sub-head">处理状态分布统计</div>
+                  <table class="report-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 60px">序号</th>
+                        <th>处理状态</th>
+                        <th style="width: 120px">次数</th>
+                        <th style="width: 120px">占比</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(item, i) in handleStatusStats" :key="item.name">
+                        <td>{{ i + 1 }}</td>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.count }}</td>
+                        <td>{{ item.percent }}%</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- 告警次数TOP5设备统计 -->
+                <div class="sub-block">
+                  <div class="sub-head">告警次数 TOP5 设备统计</div>
+                  <table class="report-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 60px">排名</th>
+                        <th>设备名称</th>
+                        <th style="width: 120px">告警次数</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(item, i) in topDevices" :key="item.name">
+                        <td>{{ i + 1 }}</td>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.count }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- 告警明细 -->
+                <div class="sub-block">
+                  <div class="sub-head">告警明细</div>
+                  <table class="report-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 60px">序号</th>
+                        <th>时间</th>
+                        <th>设备名称</th>
+                        <th>告警类型</th>
+                        <th>告警级别</th>
+                        <th>处理状态</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="item in alarmDetails" :key="item.index">
+                        <td>{{ item.index }}</td>
+                        <td>{{ item.time }}</td>
+                        <td>{{ item.device }}</td>
+                        <td>{{ item.type }}</td>
+                        <td>{{ item.level }}</td>
+                        <td>{{ item.status }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
@@ -480,6 +581,15 @@
             <div class="section-premium">
               <div class="section-head">03 运维巡检执行情况</div>
               <div class="section-body">
+                <!-- 运维总结 -->
+                <div class="om-summary">
+                  <span class="om-summary-label">运维总结：</span>
+                  本{{ periodLabel }}项目设备总数 <span class="highlight-inline">{{ omSummary.deviceTotal }}</span> 台，
+                  设备在线率 <span class="highlight-green">{{ omSummary.onlineRate }}%</span>，
+                  告警 <span class="highlight-red">{{ omSummary.alarmTotal }}</span> 次，
+                  工单 <span class="highlight-inline">{{ omSummary.workOrderTotal }}</span> 单。
+                </div>
+
                 <div class="inspection-grid-premium">
                   <div class="ins-card">
                     <div class="ins-label">巡检计划数</div>
@@ -496,6 +606,41 @@
                   <div class="ins-card warning">
                     <div class="ins-label">发现异常</div>
                     <div class="ins-value">{{ reportForm.abnormalCount }}</div>
+                  </div>
+                </div>
+
+                <!-- 工单处理情况 -->
+                <div class="sub-block">
+                  <div class="sub-head">工单处理情况</div>
+                  <div class="wo-tables">
+                    <table class="report-table">
+                      <thead>
+                        <tr>
+                          <th>工单状态</th>
+                          <th style="width: 120px">次数</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="item in workOrderStatusStats" :key="item.status">
+                          <td>{{ item.status }}</td>
+                          <td>{{ item.count }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <table class="report-table">
+                      <thead>
+                        <tr>
+                          <th>紧急程度</th>
+                          <th style="width: 120px">次数</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="item in urgencyStats" :key="item.level">
+                          <td>{{ item.level }}</td>
+                          <td>{{ item.count }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
@@ -601,6 +746,41 @@ const handleAuthSubmit = () => {
 // Report Export State
 const exportReportModalVisible = ref(false)
 const reportType = ref('')
+const reportDocRef = ref(null)
+
+// 根据报告类型切换日期选择器类型：周报-周，月报-月，年报-年
+const pickerType = computed(() => {
+  if (reportType.value === '年报') return 'year'
+  if (reportType.value === '月报') return 'month'
+  return 'week'
+})
+
+// 本年/本月/本周
+const periodLabel = computed(() => {
+  if (reportType.value === '年报') return '年'
+  if (reportType.value === '月报') return '月'
+  return '周'
+})
+
+// 未来日期不可选
+const disabledDate = (current) => current && current > dayjs().endOf('day')
+
+// 新增统计数据
+const alarmTypeStats = ref([])
+const handleStatusStats = ref([])
+const topDevices = ref([])
+const alarmDetails = ref([])
+const workOrderStatusStats = ref([])
+const urgencyStats = ref([])
+const omSummary = reactive({ deviceTotal: 14, onlineRate: 92, alarmTotal: 261, workOrderTotal: 3 })
+
+const ALARM_TYPES = ['远程合闸', '失复电', '剩余电流缓变保护', '远程跳闸', '缺相保护', '电压不平衡保护', '手动分闸', '手动合闸']
+const HANDLE_STATUSES = ['未恢复', '已恢复', '转工单', '测试', '误报']
+const ALARM_LEVELS = ['严重', '较大', '关注', '一般']
+const DEVICE_POOL = ['总路100A重合闸', '水泵回路32A', '空调回路32A', '照明回路16A', '插座回路20A', '备用回路10A', '办公照明回路', '电梯专用回路', '消防回路', '充电桩回路']
+const WO_STATUSES = ['待处理', '处理中', '已完成', '已关闭']
+const URGENCY_LEVELS = ['紧急', '重要', '一般']
+
 const reportForm = reactive({
   date: dayjs('2026-03-09'),
   year1: '2026',
@@ -634,21 +814,24 @@ const reportForm = reactive({
 
 watch([() => reportForm.date, reportType], ([newDate, newType]) => {
   if (newDate && newType) {
-    const start = dayjs(newDate)
-    let end
-    if (newType === '年报') {
-      end = start.add(1, 'year').subtract(1, 'day')
-    } else if (newType === '月报') {
-      end = start.add(1, 'month').subtract(1, 'day')
-    } else {
-      // For Weekly Report (周报), 7 days inclusive
-      end = start.add(6, 'day')
+    const sel = dayjs(newDate)
+    // 按报告类型确定统计单位：周报-week，月报-month，年报-year
+    let unit = 'week'
+    if (newType === '年报') unit = 'year'
+    else if (newType === '月报') unit = 'month'
+
+    const start = sel.startOf(unit)
+    let end = sel.endOf(unit)
+    const now = dayjs()
+    // 若当前周期尚未结束，报告周期截止到当前日期
+    if (end.isAfter(now)) {
+      end = now
     }
-    
+
     reportForm.year1 = start.format('YYYY')
     reportForm.month1 = start.format('MM')
     reportForm.day1 = start.format('DD')
-    
+
     reportForm.year2 = end.format('YYYY')
     reportForm.month2 = end.format('MM')
     reportForm.day2 = end.format('DD')
@@ -660,7 +843,7 @@ watch([() => reportForm.date, reportType], ([newDate, newType]) => {
     reportForm.recloserCount = (15 + (seed % 10)).toString()
     reportForm.singleBreakerCount = (70 + (seed % 15)).toString()
     reportForm.threeBreakerCount = (40 + (seed % 10)).toString()
-    
+
     reportForm.alarmCount = (10 + (seed % 30)).toString()
     reportForm.criticalCount = Math.floor(parseInt(reportForm.alarmCount) * 0.1).toString()
     reportForm.majorCount = Math.floor(parseInt(reportForm.alarmCount) * 0.2).toString()
@@ -672,11 +855,209 @@ watch([() => reportForm.date, reportType], ([newDate, newType]) => {
     reportForm.executeCount = reportForm.planCount
     reportForm.normalCount = (parseInt(reportForm.executeCount) - (seed % 2 === 0 ? 0 : 1)).toString()
     reportForm.abnormalCount = (parseInt(reportForm.executeCount) - parseInt(reportForm.normalCount)).toString()
+
+    buildExtraStats(seed, start)
   }
 }, { immediate: true })
 
+// 生成预警分析、运维总结相关的模拟统计数据
+const buildExtraStats = (seed, start) => {
+  // 告警类型分布统计
+  const typeCounts = ALARM_TYPES.map((name, i) => ({ name, count: 5 + ((seed * (i + 3)) % 40) }))
+  const totalAlarm = typeCounts.reduce((s, x) => s + x.count, 0)
+  alarmTypeStats.value = typeCounts.map((x) => ({ ...x, percent: ((x.count / totalAlarm) * 100).toFixed(1) }))
+
+  // 处理状态分布统计
+  const ratios = [0.15, 0.5, 0.2, 0.05, 0.1]
+  let remain = totalAlarm
+  handleStatusStats.value = HANDLE_STATUSES.map((name, i) => {
+    const count = i === HANDLE_STATUSES.length - 1 ? remain : Math.floor(totalAlarm * ratios[i])
+    remain -= count
+    return { name, count, percent: ((count / totalAlarm) * 100).toFixed(1) }
+  })
+
+  // 告警次数TOP5设备统计
+  topDevices.value = DEVICE_POOL
+    .map((name, i) => ({ name, count: 3 + ((seed * (i + 2)) % 50) }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5)
+
+  // 告警明细
+  alarmDetails.value = Array.from({ length: 10 }).map((_, i) => ({
+    index: i + 1,
+    time: start.add(i * 11 + (seed % 7), 'hour').format('YYYY-MM-DD HH:mm:ss'),
+    device: DEVICE_POOL[(seed + i) % DEVICE_POOL.length],
+    type: ALARM_TYPES[(seed + i) % ALARM_TYPES.length],
+    level: ALARM_LEVELS[(seed + i) % ALARM_LEVELS.length],
+    status: HANDLE_STATUSES[(seed + i) % HANDLE_STATUSES.length]
+  }))
+
+  // 工单处理情况
+  workOrderStatusStats.value = WO_STATUSES.map((status, i) => ({ status, count: 1 + ((seed + i) % 4) }))
+  const woTotal = workOrderStatusStats.value.reduce((s, x) => s + x.count, 0)
+  let woRemain = woTotal
+  const uRatios = [0.3, 0.3]
+  urgencyStats.value = URGENCY_LEVELS.map((level, i) => {
+    const count = i === URGENCY_LEVELS.length - 1 ? woRemain : Math.floor(woTotal * uRatios[i])
+    woRemain -= count
+    return { level, count }
+  })
+
+  // 运维总结
+  omSummary.deviceTotal = 14 + (seed % 10)
+  omSummary.onlineRate = 88 + (seed % 10)
+  omSummary.alarmTotal = totalAlarm
+  omSummary.workOrderTotal = woTotal
+}
+
+// 导出Word：直接按数据生成 Word 友好的表格布局，保证卡片一排多个且带背景色
+// （Word 的 HTML 引擎不支持 flex/grid，div 背景色也会丢失，故卡片统一用 table 单元格实现）
+const sectionHead = (text) =>
+  `<div style="font-size:20px;font-weight:bold;color:#262626;margin:0 0 18px;padding-bottom:8px;border-bottom:2px solid #cf1322;">${text}</div>`
+
+const subHead = (text) =>
+  `<div style="font-size:16px;font-weight:bold;color:#262626;margin:20px 0 10px;border-left:4px solid #cf1322;padding-left:8px;">${text}</div>`
+
+// 一排展示的卡片，使用单行表格，每个卡片一个单元格（带背景色）
+// 卡片之间插入空白间隔单元格，保证 Word 中有间隙
+const cardRow = (cards) => {
+  const gap = 2 // 间隔列宽度百分比
+  const w = ((100 - gap * (cards.length - 1)) / cards.length).toFixed(2)
+  const spacer = `<td width="${gap}%" style="border:none;"></td>`
+  const cells = cards
+    .map(
+      (c) => `<td width="${w}%" valign="top" bgcolor="${c.bg || '#fafafa'}" style="background:${c.bg || '#fafafa'};border:1px solid #f0f0f0;padding:14px;text-align:center;">
+        <div style="font-size:13px;color:#8c8c8c;margin-bottom:8px;">${c.label}</div>
+        <div style="font-size:20px;font-weight:bold;color:${c.color || '#262626'};">${c.value}</div>
+      </td>`
+    )
+    .join(spacer)
+  return `<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-bottom:10px;"><tr>${cells}</tr></table>`
+}
+
+// 普通数据表格
+const dataTable = (headers, rows, widths = []) => {
+  const ths = headers
+    .map((h, i) => `<th${widths[i] ? ` width="${widths[i]}"` : ''} bgcolor="#fafafa" style="background:#fafafa;border:1px solid #d9d9d9;padding:8px 10px;text-align:center;font-weight:bold;">${h}</th>`)
+    .join('')
+  const trs = rows
+    .map(
+      (r) =>
+        `<tr>${r.map((cell) => `<td style="border:1px solid #d9d9d9;padding:8px 10px;text-align:center;">${cell}</td>`).join('')}</tr>`
+    )
+    .join('')
+  return `<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;font-size:14px;margin-bottom:10px;"><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`
+}
+
+const exportReportToWord = () => {
+  const f = reportForm
+  const dateRange = `${f.year1} 年 ${f.month1} 月 ${f.day1} 日 至 ${f.year2} 年 ${f.month2} 月 ${f.day2} 日`
+
+  // 01 项目与设备概况
+  const section1 =
+    sectionHead('01 项目与设备概况') +
+    cardRow([
+      { label: '负责人', value: f.manager },
+      { label: '联系电话', value: f.phone },
+      { label: '设备接入总数', value: f.deviceCount }
+    ]) +
+    `<div style="font-size:15px;line-height:1.8;padding:10px 15px;background:#fafafa;border-left:4px solid #d9d9d9;">
+      设备构成详情：包含智能网关 <b style="color:#cf1322;">${f.gatewayCount}</b> 台，塑壳重合闸 <b style="color:#cf1322;">${f.recloserCount}</b> 台，单相断路器 <b style="color:#cf1322;">${f.singleBreakerCount}</b> 台，三相断路器 <b style="color:#cf1322;">${f.threeBreakerCount}</b> 台。
+    </div>`
+
+  // 02 预警与报警分析
+  const section2 =
+    sectionHead('02 预警与报警分析') +
+    `<div style="font-size:16px;margin-bottom:16px;">本周期内共产生报警 <span style="color:#cf1322;font-weight:bold;font-size:18px;">${f.alarmCount}</span> 次，已完成闭环处置 <span style="color:#389e0d;font-weight:bold;font-size:18px;">${f.handledCount}</span> 次。</div>` +
+    cardRow([
+      { label: '严重', value: f.criticalCount, bg: '#fff1f0', color: '#cf1322' },
+      { label: '较大', value: f.majorCount, bg: '#fff7e6', color: '#d46b08' },
+      { label: '关注', value: f.minorCount, bg: '#e6f7ff', color: '#1890ff' },
+      { label: '一般', value: f.infoCount, bg: '#f6ffed', color: '#389e0d' }
+    ]) +
+    subHead('告警类型分布统计') +
+    dataTable(
+      ['序号', '告警类型', '次数', '占比'],
+      alarmTypeStats.value.map((x, i) => [i + 1, x.name, x.count, x.percent + '%']),
+      ['60', '', '120', '120']
+    ) +
+    subHead('处理状态分布统计') +
+    dataTable(
+      ['序号', '处理状态', '次数', '占比'],
+      handleStatusStats.value.map((x, i) => [i + 1, x.name, x.count, x.percent + '%']),
+      ['60', '', '120', '120']
+    ) +
+    subHead('告警次数 TOP5 设备统计') +
+    dataTable(
+      ['排名', '设备名称', '告警次数'],
+      topDevices.value.map((x, i) => [i + 1, x.name, x.count]),
+      ['60', '', '120']
+    ) +
+    subHead('告警明细') +
+    dataTable(
+      ['序号', '时间', '设备名称', '告警类型', '告警级别', '处理状态'],
+      alarmDetails.value.map((x) => [x.index, x.time, x.device, x.type, x.level, x.status]),
+      ['60']
+    )
+
+  // 03 运维巡检执行情况
+  const woTableHtml =
+    `<table width="100%" cellspacing="0" cellpadding="0"><tr>` +
+    `<td width="50%" valign="top" style="padding-right:12px;">${dataTable(['工单状态', '次数'], workOrderStatusStats.value.map((x) => [x.status, x.count]), ['', '120'])}</td>` +
+    `<td width="50%" valign="top" style="padding-left:12px;">${dataTable(['紧急程度', '次数'], urgencyStats.value.map((x) => [x.level, x.count]), ['', '120'])}</td>` +
+    `</tr></table>`
+
+  const section3 =
+    sectionHead('03 运维巡检执行情况') +
+    `<div style="font-size:15px;line-height:1.9;padding:12px 16px;background:#fafafa;border-left:4px solid #cf1322;margin-bottom:18px;">
+      <b>运维总结：</b>本${periodLabel.value}项目设备总数 <b style="color:#cf1322;">${omSummary.deviceTotal}</b> 台，设备在线率 <b style="color:#389e0d;">${omSummary.onlineRate}%</b>，告警 <b style="color:#cf1322;">${omSummary.alarmTotal}</b> 次，工单 <b style="color:#cf1322;">${omSummary.workOrderTotal}</b> 单。
+    </div>` +
+    cardRow([
+      { label: '巡检计划数', value: f.planCount },
+      { label: '执行次数', value: f.executeCount },
+      { label: '巡检正常', value: f.normalCount, bg: '#f6ffed', color: '#389e0d' },
+      { label: '发现异常', value: f.abnormalCount, bg: '#fffbe6', color: '#d48806' }
+    ]) +
+    subHead('工单处理情况') +
+    woTableHtml
+
+  const body = `
+    <div style="font-family:'PingFang SC','Microsoft YaHei',SimSun,sans-serif;color:#262626;padding:20px 40px;">
+      <div style="text-align:center;margin-bottom:30px;">
+        <div style="font-size:18px;color:#595959;letter-spacing:2px;margin-bottom:10px;">浙江德菱科技股份有限公司</div>
+        <div style="font-size:30px;font-weight:bold;color:#cf1322;letter-spacing:4px;margin-bottom:16px;">${projectName.value}安全运行${reportType.value}</div>
+        <div style="font-size:16px;color:#595959;"><b>报告周期：</b>${dateRange}</div>
+        <div style="border-top:3px solid #cf1322;height:3px;margin-top:18px;"></div>
+      </div>
+      <div style="margin-bottom:36px;">${section1}</div>
+      <div style="margin-bottom:36px;">${section2}</div>
+      <div style="margin-bottom:36px;">${section3}</div>
+      <div style="margin-top:50px;text-align:right;padding-right:40px;">
+        <div style="font-size:18px;font-weight:bold;margin-bottom:15px;">浙江德菱科技股份有限公司</div>
+        <div style="font-size:16px;letter-spacing:2px;">${f.year1} 年 ${f.month1} 月 ${f.day1} 日</div>
+      </div>
+    </div>`
+
+  const html =
+    '<!DOCTYPE html>' +
+    "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>" +
+    "<head><meta charset='utf-8'><title>" + projectName.value + '安全运行' + reportType.value + '</title></head>' +
+    '<body>' + body + '</body></html>'
+
+  const blob = new Blob(['﻿', html], { type: 'application/msword' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${projectName.value}安全运行${reportType.value}.doc`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
 const handleExportOk = () => {
-  message.success(`正在导出${reportType.value}Word报告...`)
+  exportReportToWord()
+  message.success(`${reportType.value}Word报告已导出`)
   exportReportModalVisible.value = false
 }
 
@@ -704,6 +1085,8 @@ const reportData = [
 
 const handleExportWord = (record) => {
   reportType.value = record.type
+  // 默认选中当前周期
+  reportForm.date = dayjs()
   exportReportModalVisible.value = true
 }
 
@@ -1594,5 +1977,64 @@ const pagination = reactive({
 .footer-date {
   font-size: 16px;
   letter-spacing: 2px;
+}
+
+/* 新增统计区块样式 */
+.om-summary {
+  font-size: 15px;
+  line-height: 1.9;
+  padding: 12px 16px;
+  background: #fafafa;
+  border-left: 4px solid #cf1322;
+  margin-bottom: 20px;
+}
+
+.om-summary-label {
+  font-weight: bold;
+}
+
+.sub-block {
+  margin-top: 24px;
+}
+
+.sub-head {
+  font-size: 16px;
+  font-weight: bold;
+  color: #262626;
+  margin-bottom: 12px;
+  padding-left: 10px;
+  border-left: 4px solid #cf1322;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.report-table th,
+.report-table td {
+  border: 1px solid #e8e8e8;
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.report-table th {
+  background: #fafafa;
+  font-weight: bold;
+  color: #262626;
+}
+
+.report-table tbody tr:nth-child(even) {
+  background: #fcfcfc;
+}
+
+.wo-tables {
+  display: flex;
+  gap: 24px;
+}
+
+.wo-tables .report-table {
+  flex: 1;
 }
 </style>
